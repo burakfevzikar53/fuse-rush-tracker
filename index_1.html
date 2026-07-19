@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fuse Rush · Görev Merkezi</title>
+<style>
+:root{
+  --bg:#0e1014; --panel:#161a22; --panel2:#1c2130; --line:#262d3f;
+  --text:#e8ebf2; --muted:#8b93a7; --accent:#ffa02e; --accent2:#ff6b3d;
+  --ok:#3ecf8e; --warn:#ffd166; --bad:#ff5d6c; --info:#5aa9ff;
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+  font-size:14px; overflow:hidden;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,textarea,select{
+  font-family:inherit;font-size:14px;color:var(--text);
+  background:var(--panel2);border:1px solid var(--line);border-radius:8px;
+  padding:9px 12px;width:100%;outline:none;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:70px}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 5px;font-weight:600;letter-spacing:.3px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#2b3347;border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- header ---------- */
+#app{display:flex;flex-direction:column;height:100vh}
+header{
+  display:flex;align-items:center;gap:18px;padding:0 18px;height:58px;flex-shrink:0;
+  background:var(--panel);border-bottom:1px solid var(--line);
+}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;white-space:nowrap}
+.logo .spark{
+  width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:16px;
+}
+.logo small{color:var(--muted);font-weight:500;font-size:11px;display:block;margin-top:1px}
+nav{display:flex;gap:4px;flex:1;justify-content:center}
+nav button{
+  padding:8px 16px;border-radius:9px;color:var(--muted);font-weight:600;font-size:13.5px;
+  display:flex;align-items:center;gap:7px;
+}
+nav button:hover{color:var(--text);background:var(--panel2)}
+nav button.on{color:var(--text);background:var(--panel2);box-shadow:inset 0 -2px 0 var(--accent)}
+nav button .cnt{
+  background:var(--line);border-radius:20px;padding:1px 7px;font-size:11px;color:var(--muted)
+}
+.hright{display:flex;align-items:center;gap:10px}
+#syncBadge{
+  display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);
+  padding:6px 11px;border-radius:20px;background:var(--panel2);white-space:nowrap;
+}
+#syncDot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+#syncDot.ok{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+#syncDot.busy{background:var(--warn);animation:pulse 1s infinite}
+#syncDot.err{background:var(--bad)}
+#syncDot.demo{background:var(--info)}
+@keyframes pulse{50%{opacity:.35}}
+#userChip{
+  display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:20px;
+  background:var(--panel2);font-weight:600;font-size:13px;
+}
+#userChip:hover{background:var(--line)}
+.avatar{
+  width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#101319;flex-shrink:0;
+}
+.gear{font-size:17px;padding:8px;border-radius:9px;color:var(--muted)}
+.gear:hover{background:var(--panel2);color:var(--text)}
+
+/* ---------- main ---------- */
+main{flex:1;overflow:auto;padding:20px 22px}
+.viewtitle{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.viewtitle h2{font-size:18px;font-weight:800}
+.viewtitle p{color:var(--muted);font-size:12.5px;margin-top:3px}
+
+.btn{
+  padding:9px 16px;border-radius:9px;font-weight:700;font-size:13px;
+  background:var(--panel2);border:1px solid var(--line);display:inline-flex;align-items:center;gap:7px;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#14100a;border:none}
+.btn.primary:hover{filter:brightness(1.1);color:#14100a}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.btn.sm{padding:6px 11px;font-size:12px}
+
+/* ---------- kanban ---------- */
+#board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start;min-width:900px}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:11px;min-height:120px}
+.colhead{display:flex;align-items:center;gap:8px;padding:2px 4px 10px;font-weight:800;font-size:13px}
+.colhead .cdot{width:9px;height:9px;border-radius:3px}
+.colhead .cnt{color:var(--muted);font-weight:600;font-size:12px;margin-left:auto}
+.colhead .addbtn{color:var(--muted);font-size:16px;padding:0 4px;border-radius:6px}
+.colhead .addbtn:hover{color:var(--accent)}
+.col.dragover{outline:2px dashed var(--accent);outline-offset:-4px}
+.card{
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+  padding:11px 12px;margin-bottom:9px;cursor:grab;position:relative;
+  border-left:3px solid var(--muted);transition:transform .08s;
+}
+.card:hover{transform:translateY(-1px);border-color:#39415a;border-left-color:inherit}
+.card.p-low{border-left-color:#525b70}
+.card.p-med{border-left-color:var(--info)}
+.card.p-high{border-left-color:var(--warn)}
+.card.p-crit{border-left-color:var(--bad)}
+.card h4{font-size:13.5px;font-weight:700;line-height:1.35;padding-right:18px}
+.card .desc{color:var(--muted);font-size:12px;margin-top:5px;line-height:1.45;white-space:pre-wrap}
+.cardfoot{display:flex;align-items:center;gap:6px;margin-top:9px;flex-wrap:wrap}
+.chip{
+  font-size:10.5px;font-weight:700;padding:2.5px 8px;border-radius:20px;
+  background:var(--line);color:var(--muted);letter-spacing:.2px;
+}
+.chip.ms{background:rgba(90,169,255,.13);color:var(--info)}
+.chip.tag{background:rgba(255,160,46,.12);color:var(--accent)}
+.cardfoot .avatar{width:20px;height:20px;font-size:9px;margin-left:auto}
+.prio{font-size:10.5px;font-weight:800;padding:2.5px 8px;border-radius:20px}
+.prio.low{background:rgba(139,147,167,.15);color:var(--muted)}
+.prio.med{background:rgba(90,169,255,.15);color:var(--info)}
+.prio.high{background:rgba(255,209,102,.15);color:var(--warn)}
+.prio.crit{background:rgba(255,93,108,.18);color:var(--bad)}
+
+/* ---------- milestones ---------- */
+.mslist{display:flex;flex-direction:column;gap:13px;max-width:860px}
+.ms{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;position:relative;
+}
+.ms h3{font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px}
+.ms .due{font-size:12px;color:var(--muted);font-weight:600}
+.ms .due.late{color:var(--bad)}
+.ms p.d{color:var(--muted);font-size:12.5px;margin-top:6px;line-height:1.5}
+.msbar{height:8px;background:var(--line);border-radius:6px;margin-top:13px;overflow:hidden}
+.msbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;transition:width .4s}
+.msbar i.full{background:var(--ok)}
+.msmeta{display:flex;justify-content:space-between;margin-top:7px;font-size:11.5px;color:var(--muted);font-weight:600}
+.msedit{position:absolute;top:13px;right:13px}
+
+/* ---------- bugs ---------- */
+.filters{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.filters button{
+  padding:6px 13px;border-radius:20px;font-size:12px;font-weight:700;
+  background:var(--panel);border:1px solid var(--line);color:var(--muted);
+}
+.filters button.on{color:var(--text);border-color:var(--accent);background:var(--panel2)}
+.buglist{display:flex;flex-direction:column;gap:9px;max-width:960px}
+.bug{
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:13px 16px;display:flex;gap:13px;align-items:flex-start;cursor:pointer;
+}
+.bug:hover{border-color:#39415a}
+.bug .sev{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.sev.low{background:var(--muted)} .sev.med{background:var(--info)}
+.sev.high{background:var(--warn)} .sev.crit{background:var(--bad);box-shadow:0 0 7px var(--bad)}
+.bug h4{font-size:13.5px;font-weight:700}
+.bug .meta{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;align-items:center}
+.bug .steps{color:var(--muted);font-size:12px;margin-top:5px;white-space:pre-wrap;line-height:1.45}
+.bstat{font-size:10.5px;font-weight:800;padding:2.5px 9px;border-radius:20px}
+.bstat.open{background:rgba(255,93,108,.15);color:var(--bad)}
+.bstat.wip{background:rgba(255,209,102,.15);color:var(--warn)}
+.bstat.fixed{background:rgba(62,207,142,.15);color:var(--ok)}
+
+/* ---------- notes ---------- */
+.notewrap{max-width:760px}
+.composer{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:18px}
+.composer .crow{display:flex;justify-content:flex-end;margin-top:10px}
+.note{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:11px;position:relative;
+}
+.note .nhead{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+.note .nhead b{font-size:13px}
+.note .nhead time{color:var(--muted);font-size:11.5px}
+.note .ntext{white-space:pre-wrap;line-height:1.55;font-size:13.5px}
+.note .ndel{position:absolute;top:10px;right:12px;color:var(--muted);font-size:14px;opacity:0;border-radius:6px;padding:2px 6px}
+.note:hover .ndel{opacity:1}
+.note .ndel:hover{color:var(--bad)}
+
+/* ---------- modal ---------- */
+#overlay{
+  position:fixed;inset:0;background:rgba(5,7,10,.72);backdrop-filter:blur(3px);
+  display:none;align-items:flex-start;justify-content:center;z-index:50;overflow:auto;padding:40px 16px;
+}
+#overlay.show{display:flex}
+.modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  width:100%;max-width:520px;padding:24px;animation:pop .16s ease;
+}
+@keyframes pop{from{transform:translateY(10px);opacity:0}}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:4px}
+.modal .sub{color:var(--muted);font-size:12.5px;line-height:1.5}
+.mrow{display:flex;gap:12px}
+.mrow>div{flex:1}
+.mfoot{display:flex;gap:9px;margin-top:22px;justify-content:flex-end;align-items:center}
+.mfoot .left{margin-right:auto}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{
+  padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:700;
+  background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+}
+.seg button.on{border-color:var(--accent);color:var(--accent);background:rgba(255,160,46,.08)}
+
+/* ---------- setup wizard ---------- */
+.wizard{max-width:560px}
+.wizard .opt{
+  display:flex;gap:14px;align-items:flex-start;background:var(--panel2);
+  border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px;cursor:pointer;text-align:left;width:100%;
+}
+.wizard .opt:hover{border-color:var(--accent)}
+.wizard .opt .ic{font-size:22px}
+.wizard .opt b{display:block;font-size:14px;margin-bottom:4px}
+.wizard .opt span{color:var(--muted);font-size:12.5px;line-height:1.5}
+.helpbox{
+  background:rgba(90,169,255,.07);border:1px solid rgba(90,169,255,.25);
+  border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.6;color:#c9dcf5;margin-top:12px;
+}
+.helpbox b{color:var(--info)}
+.helpbox ol{margin:6px 0 0 18px}
+.helpbox code{background:rgba(0,0,0,.3);padding:1px 6px;border-radius:5px;font-size:11.5px}
+.helpbox a{color:var(--info)}
+
+/* ---------- toast ---------- */
+#toasts{position:fixed;bottom:20px;right:20px;z-index:99;display:flex;flex-direction:column;gap:8px}
+.toast{
+  background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);
+  padding:11px 16px;border-radius:10px;font-size:13px;font-weight:600;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);animation:pop .2s ease;max-width:340px;
+}
+.toast.ok{border-left-color:var(--ok)}
+.toast.err{border-left-color:var(--bad)}
+.toast.info{border-left-color:var(--info)}
+
+.empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:13px;line-height:1.6}
+.empty .big{font-size:30px;display:block;margin-bottom:8px}
+@media(max-width:980px){#board{grid-template-columns:repeat(2,1fr);min-width:0}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">
+      <div class="spark">🧨</div>
+      <div>Fuse Rush<small>Görev Merkezi</small></div>
+    </div>
+    <nav id="tabs"></nav>
+    <div class="hright">
+      <div id="syncBadge"><span id="syncDot"></span><span id="syncText">—</span></div>
+      <button id="userChip" title="Kullanıcı değiştir"></button>
+      <button class="gear" id="gearBtn" title="Ayarlar">⚙️</button>
+    </div>
+  </header>
+  <main id="view"></main>
+</div>
+<div id="overlay"></div>
+<div id="toasts"></div>
+<script>
+/* ================================================================
+   Fuse Rush Görev Merkezi
+   Tek dosyalık, GitHub senkronlu ekip görev takip uygulaması.
+   Veri: repodaki data.json — SHA tabanlı çakışma önleme + otomatik merge.
+   ================================================================ */
+/* ---------------- yardımcılar ---------------- */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const now = () => Date.now();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = ts => new Date(ts).toLocaleString('tr-TR', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+const fmtDay  = d  => new Date(d + 'T12:00:00').toLocaleDateString('tr-TR', {day:'2-digit', month:'long', year:'numeric'});
+
+const LS = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+function toast(msg, type){
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity = 0; t.style.transition = 'opacity .4s'; }, 3600);
+  setTimeout(() => t.remove(), 4100);
+}
+
+const AVATAR_COLORS = ['#ffa02e','#5aa9ff','#3ecf8e','#ff5d6c','#c792ea','#ffd166'];
+function avatarHtml(name, size){
+  const n = (name || '?').trim();
+  const ini = n.split(/\s+/).map(w => w[0]).join('').slice(0,2).toUpperCase() || '?';
+  const idx = [...n].reduce((a,c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length;
+  return '<span class="avatar" style="background:' + AVATAR_COLORS[idx] + (size?';width:'+size+'px;height:'+size+'px;font-size:'+Math.round(size*0.42)+'px':'') + '" title="' + esc(n) + '">' + esc(ini) + '</span>';
+}
+
+/* ---------------- durum ---------------- */
+const COLS = [
+  {id:'backlog', name:'Fikir Havuzu', color:'#8b93a7'},
+  {id:'todo',    name:'Yapılacak',    color:'#5aa9ff'},
+  {id:'doing',   name:'Yapılıyor',    color:'#ffd166'},
+  {id:'done',    name:'Bitti',        color:'#3ecf8e'}
+];
+const PRIOS = [ {id:'low',n:'Düşük'}, {id:'med',n:'Orta'}, {id:'high',n:'Yüksek'}, {id:'crit',n:'Kritik'} ];
+const SEVS  = [ {id:'low',n:'Düşük'}, {id:'med',n:'Orta'}, {id:'high',n:'Yüksek'}, {id:'crit',n:'Kritik'} ];
+const BSTATS = [ {id:'open',n:'Açık'}, {id:'wip',n:'İnceleniyor'}, {id:'fixed',n:'Çözüldü'} ];
+
+function emptyData(){
+  return {
+    meta: { project: 'Fuse Rush', version: 1 },
+    members: ['Bloom', 'Developer'],
+    tasks: [], milestones: [], bugs: [], notes: []
+  };
+}
+
+const App = {
+  cfg: LS.get('fr_cfg') || null,   // {mode:'github'|'demo', owner, repo, branch, path, token, user}
+  data: null,
+  sha: null,            // son bilinen uzak SHA
+  dirty: false,
+  saving: false,
+  saveTimer: null,
+  pollTimer: null,
+  tab: 'board',
+  bugFilter: 'all'
+};
+
+/* ---------------- GitHub API ---------------- */
+function b64encode(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 8192)
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  return btoa(bin);
+}
+function b64decode(b64){
+  const bin = atob(b64.replace(/\n/g, ''));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+function ghUrl(){
+  const c = App.cfg;
+  return 'https://api.github.com/repos/' + c.owner + '/' + c.repo + '/contents/' + (c.path || 'data.json');
+}
+function ghHeaders(){
+  return {
+    'Authorization': 'Bearer ' + App.cfg.token,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+}
+async function ghGet(){
+  const r = await fetch(ghUrl() + '?ref=' + encodeURIComponent(App.cfg.branch || 'main') + '&t=' + Date.now(), { headers: ghHeaders(), cache: 'no-store' });
+  if (r.status === 404) return { notFound: true };
+  if (!r.ok) throw new Error('GitHub okuma hatası: ' + r.status);
+  const j = await r.json();
+  return { json: JSON.parse(b64decode(j.content)), sha: j.sha };
+}
+async function ghPut(data, sha){
+  const body = {
+    message: '📋 ' + (App.cfg.user || 'Fuse Rush') + ' — görev panosu güncellendi',
+    content: b64encode(JSON.stringify(data, null, 2)),
+    branch: App.cfg.branch || 'main'
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(ghUrl(), { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  if (r.status === 409 || r.status === 422) return { conflict: true };
+  if (!r.ok) throw new Error('GitHub yazma hatası: ' + r.status);
+  const j = await r.json();
+  return { sha: j.content.sha };
+}
+
+/* ---------------- birleştirme (çakışma önleme) ----------------
+   Her kayıt (görev/bug/milestone/not) kendi updatedAt damgasını taşır.
+   İki sürüm çakışırsa: kayıtlar id ile eşleştirilir, yenisi kazanır.
+   Silinenler deleted:true damgasıyla saklanır (tombstone). */
+function mergeColl(a, b){
+  const map = new Map();
+  for (const it of (a || [])) map.set(it.id, it);
+  for (const it of (b || [])){
+    const ex = map.get(it.id);
+    if (!ex || (it.updatedAt || 0) >= (ex.updatedAt || 0)) map.set(it.id, it);
+  }
+  return [...map.values()];
+}
+function mergeData(remote, local){
+  return {
+    meta: local.meta || remote.meta,
+    members: (local.membersUpdatedAt || 0) >= (remote.membersUpdatedAt || 0) ? local.members : remote.members,
+    membersUpdatedAt: Math.max(local.membersUpdatedAt || 0, remote.membersUpdatedAt || 0),
+    tasks:      mergeColl(remote.tasks, local.tasks),
+    milestones: mergeColl(remote.milestones, local.milestones),
+    bugs:       mergeColl(remote.bugs, local.bugs),
+    notes:      mergeColl(remote.notes, local.notes)
+  };
+}
+
+/* ---------------- senkron motoru ---------------- */
+function setSync(state, text){
+  $('#syncDot').className = state;
+  $('#syncText').textContent = text;
+}
+function markDirty(){
+  App.dirty = true;
+  if (App.cfg.mode === 'demo'){
+    LS.set('fr_demo', App.data);
+    setSync('demo', 'Demo · yerel kayıt');
+    return;
+  }
+  setSync('busy', 'Kaydedilecek…');
+  clearTimeout(App.saveTimer);
+  App.saveTimer = setTimeout(doSave, 1200);
+}
+async function doSave(){
+  if (App.saving || App.cfg.mode !== 'github') return;
+  App.saving = true;
+  setSync('busy', 'Kaydediliyor…');
+  try {
+    App.dirty = false;
+    let res = await ghPut(App.data, App.sha);
+    if (res.conflict){
+      // Uzakta başka kayıt var: çek, birleştir, tekrar yaz
+      const remote = await ghGet();
+      if (!remote.notFound){
+        App.data = mergeData(remote.json, App.data);
+        App.sha = remote.sha;
+        renderAll();
+        toast('Arkadaşının değişiklikleriyle birleştirildi 🤝', 'info');
+      }
+      res = await ghPut(App.data, App.sha);
+      if (res.conflict) throw new Error('Çakışma çözülemedi, tekrar denenecek');
+    }
+    App.sha = res.sha;
+    if (App.dirty){ App.saving = false; return doSave(); }
+    setSync('ok', 'Senkronize ✓ ' + fmtDate(now()));
+  } catch (e){
+    App.dirty = true;
+    setSync('err', 'Bağlantı sorunu — yeniden denenecek');
+    clearTimeout(App.saveTimer);
+    App.saveTimer = setTimeout(doSave, 6000);
+  }
+  App.saving = false;
+}
+async function pollRemote(){
+  if (App.cfg?.mode !== 'github' || App.saving || document.hidden) return;
+  try {
+    const remote = await ghGet();
+    if (remote.notFound || remote.sha === App.sha) return;
+    const merged = mergeData(remote.json, App.data);
+    App.sha = remote.sha;
+    const before = JSON.stringify(App.data);
+    App.data = merged;
+    if (JSON.stringify(merged) !== before){
+      renderAll();
+      toast('Panoda yeni değişiklikler var 🔄', 'info');
+    }
+    if (App.dirty) doSave(); else setSync('ok', 'Senkronize ✓ ' + fmtDate(now()));
+  } catch(e){ /* sessiz geç */ }
+}
+
+/* ---------------- veri erişimi ---------------- */
+const live = coll => ((App.data && App.data[coll]) || []).filter(x => !x.deleted);
+function upsert(coll, item){
+  item.updatedAt = now();
+  const arr = App.data[coll];
+  const i = arr.findIndex(x => x.id === item.id);
+  if (i >= 0) arr[i] = item; else arr.push(item);
+  markDirty(); renderAll();
+}
+function softDelete(coll, id){
+  const it = App.data[coll].find(x => x.id === id);
+  if (it){ it.deleted = true; it.updatedAt = now(); markDirty(); renderAll(); }
+}
+
+/* ---------------- görünümler ---------------- */
+const TABS = [
+  {id:'board', n:'📋 Pano',        cnt: () => live('tasks').filter(t => t.status !== 'done').length},
+  {id:'ms',    n:'🗺️ Yol Haritası', cnt: () => live('milestones').length},
+  {id:'bugs',  n:'🐞 Buglar',       cnt: () => live('bugs').filter(b => b.status !== 'fixed').length},
+  {id:'notes', n:'📝 Notlar',       cnt: () => live('notes').length}
+];
+function renderTabs(){
+  $('#tabs').innerHTML = TABS.map(t =>
+    '<button class="' + (App.tab === t.id ? 'on' : '') + '" onclick="switchTab(\'' + t.id + '\')">' +
+    t.n + ' <span class="cnt">' + t.cnt() + '</span></button>'
+  ).join('');
+}
+function switchTab(id){ App.tab = id; renderAll(); }
+
+function renderAll(){
+  if (!App.data) return;
+  renderTabs();
+  $('#userChip').innerHTML = avatarHtml(App.cfg.user) + esc(App.cfg.user || '?');
+  if (App.tab === 'board') renderBoard();
+  else if (App.tab === 'ms') renderMs();
+  else if (App.tab === 'bugs') renderBugs();
+  else renderNotes();
+}
+
+/* ---- kanban ---- */
+function renderBoard(){
+  const tasks = live('tasks');
+  const msMap = Object.fromEntries(live('milestones').map(m => [m.id, m.title]));
+  $('#view').innerHTML =
+    '<div class="viewtitle"><div><h2>Görev Panosu</h2><p>Kartları sürükleyerek taşı · her görevin tek sahibi olsun ki çakışma olmasın</p></div>' +
+    '<button class="btn primary" onclick="taskForm()">＋ Yeni Görev</button></div>' +
+    '<div id="board">' + COLS.map(c => {
+      const list = tasks.filter(t => t.status === c.id).sort((a,b) => (b.updatedAt||0) - (a.updatedAt||0));
+      return '<div class="col" data-col="' + c.id + '" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropCard(event)">' +
+        '<div class="colhead"><span class="cdot" style="background:' + c.color + '"></span>' + c.name +
+        '<span class="cnt">' + list.length + '</span><button class="addbtn" title="Bu sütuna görev ekle" onclick="taskForm(null,\'' + c.id + '\')">＋</button></div>' +
+        list.map(cardHtml.bind(null, msMap)).join('') +
+        (list.length ? '' : '<div class="empty" style="padding:18px 6px;font-size:12px">Boş</div>') +
+      '</div>';
+    }).join('') + '</div>';
+}
+function cardHtml(msMap, t){
+  const pr = PRIOS.find(p => p.id === t.priority) || PRIOS[1];
+  return '<div class="card p-' + t.priority + '" draggable="true" ondragstart="dragStart(event,\'' + t.id + '\')" onclick="taskForm(\'' + t.id + '\')">' +
+    '<h4>' + esc(t.title) + '</h4>' +
+    (t.desc ? '<div class="desc">' + esc(t.desc) + '</div>' : '') +
+    '<div class="cardfoot">' +
+      '<span class="prio ' + t.priority + '">' + pr.n + '</span>' +
+      (t.milestoneId && msMap[t.milestoneId] ? '<span class="chip ms">🗺 ' + esc(msMap[t.milestoneId]) + '</span>' : '') +
+      (t.tags || []).map(tg => '<span class="chip tag">' + esc(tg) + '</span>').join('') +
+      (t.assignee ? avatarHtml(t.assignee, 20) : '') +
+    '</div></div>';
+}
+let dragId = null;
+function dragStart(e, id){ dragId = id; e.dataTransfer.effectAllowed = 'move'; }
+function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+function dragLeave(e){ e.currentTarget.classList.remove('dragover'); }
+function dropCard(e){
+  e.preventDefault(); e.currentTarget.classList.remove('dragover');
+  const col = e.currentTarget.dataset.col;
+  const t = App.data.tasks.find(x => x.id === dragId);
+  if (t && t.status !== col){ t.status = col; t.updatedAt = now(); markDirty(); renderAll();
+    if (col === 'done') toast('“' + t.title + '” tamamlandı 🎉', 'ok');
+  }
+}
+
+/* ---- milestone ---- */
+function renderMs(){
+  const list = live('milestones').sort((a,b) => (a.due||'9999') < (b.due||'9999') ? -1 : 1);
+  const tasks = live('tasks');
+  $('#view').innerHTML =
+    '<div class="viewtitle"><div><h2>Yol Haritası</h2><p>Fuse Rush sürüm hedefleri ve ilerleme durumu</p></div>' +
+    '<button class="btn primary" onclick="msForm()">＋ Yeni Milestone</button></div>' +
+    '<div class="mslist">' + (list.length ? list.map(m => {
+      const linked = tasks.filter(t => t.milestoneId === m.id);
+      const done = linked.filter(t => t.status === 'done').length;
+      const pct = linked.length ? Math.round(done / linked.length * 100) : 0;
+      const late = m.due && m.due < new Date().toISOString().slice(0,10) && pct < 100;
+      return '<div class="ms"><h3>' + (pct === 100 ? '✅' : '🚩') + ' ' + esc(m.title) +
+        (m.due ? '<span class="due' + (late ? ' late' : '') + '">' + (late ? '⚠ ' : '📅 ') + fmtDay(m.due) + '</span>' : '') + '</h3>' +
+        (m.desc ? '<p class="d">' + esc(m.desc) + '</p>' : '') +
+        '<div class="msbar"><i class="' + (pct === 100 ? 'full' : '') + '" style="width:' + pct + '%"></i></div>' +
+        '<div class="msmeta"><span>' + done + ' / ' + linked.length + ' görev tamamlandı</span><span>%' + pct + '</span></div>' +
+        '<button class="btn sm msedit" onclick="msForm(\'' + m.id + '\')">Düzenle</button></div>';
+    }).join('') : '<div class="empty"><span class="big">🗺️</span>Henüz milestone yok.<br>Prototip, Alpha, Beta gibi hedefler ekleyerek başlayın.</div>') + '</div>';
+}
+
+/* ---- bugs ---- */
+function renderBugs(){
+  const F = [{id:'all',n:'Tümü'}, ...BSTATS];
+  let list = live('bugs');
+  if (App.bugFilter !== 'all') list = list.filter(b => b.status === App.bugFilter);
+  const sevOrder = {crit:0, high:1, med:2, low:3};
+  list.sort((a,b) => (a.status === 'fixed') - (b.status === 'fixed') || sevOrder[a.severity] - sevOrder[b.severity]);
+  $('#view').innerHTML =
+    '<div class="viewtitle"><div><h2>Bug Takibi</h2><p>Önem sırasına göre listelenir · çözülenler alta iner</p></div>' +
+    '<button class="btn primary" onclick="bugForm()">＋ Bug Bildir</button></div>' +
+    '<div class="filters">' + F.map(f =>
+      '<button class="' + (App.bugFilter === f.id ? 'on' : '') + '" onclick="App.bugFilter=\'' + f.id + '\';renderAll()">' + f.n +
+      ' (' + (f.id === 'all' ? live('bugs').length : live('bugs').filter(b => b.status === f.id).length) + ')</button>').join('') + '</div>' +
+    '<div class="buglist">' + (list.length ? list.map(b => {
+      const st = BSTATS.find(s => s.id === b.status);
+      return '<div class="bug" onclick="bugForm(\'' + b.id + '\')"><span class="sev ' + b.severity + '"></span><div style="flex:1">' +
+        '<h4>' + esc(b.title) + '</h4>' +
+        (b.steps ? '<div class="steps">' + esc(b.steps) + '</div>' : '') +
+        '<div class="meta"><span class="bstat ' + b.status + '">' + st.n + '</span>' +
+        (b.build ? '<span class="chip">Build: ' + esc(b.build) + '</span>' : '') +
+        '<span class="chip">' + fmtDate(b.createdAt) + '</span>' +
+        (b.assignee ? '<span style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)">' + avatarHtml(b.assignee, 18) + esc(b.assignee) + '</span>' : '') +
+        '</div></div></div>';
+    }).join('') : '<div class="empty"><span class="big">🐞</span>Bu filtrede bug yok — temiz iş! ✨</div>') + '</div>';
+}
+
+/* ---- notes ---- */
+function renderNotes(){
+  const list = live('notes').sort((a,b) => b.createdAt - a.createdAt);
+  $('#view').innerHTML =
+    '<div class="viewtitle"><div><h2>Notlar & Kararlar</h2><p>Tasarım kararları, fikirler, toplantı notları — kim ne zaman yazdı hep kayıtlı</p></div></div>' +
+    '<div class="notewrap"><div class="composer">' +
+    '<textarea id="noteBox" placeholder="Bir karar, fikir veya not yaz… (örn: Düşman hızı %15 azaltıldı, playtest sonrası karar)"></textarea>' +
+    '<div class="crow"><button class="btn primary" onclick="addNote()">Kaydet</button></div></div>' +
+    (list.length ? list.map(n =>
+      '<div class="note"><div class="nhead">' + avatarHtml(n.author, 24) + '<b>' + esc(n.author) + '</b>' +
+      '<time>' + fmtDate(n.createdAt) + '</time></div>' +
+      '<div class="ntext">' + esc(n.text) + '</div>' +
+      '<button class="ndel" title="Sil" onclick="softDelete(\'notes\',\'' + n.id + '\')">🗑</button></div>'
+    ).join('') : '<div class="empty"><span class="big">📝</span>Henüz not yok. İlk kararınızı yazın!</div>') + '</div>';
+}
+function addNote(){
+  const txt = $('#noteBox').value.trim();
+  if (!txt) return;
+  upsert('notes', { id: uid(), text: txt, author: App.cfg.user, createdAt: now() });
+  toast('Not kaydedildi', 'ok');
+}
+
+/* ---------------- modal & formlar ---------------- */
+function openModal(html){ $('#overlay').innerHTML = '<div class="modal">' + html + '</div>'; $('#overlay').classList.add('show'); }
+function closeModal(){ $('#overlay').classList.remove('show'); $('#overlay').innerHTML = ''; }
+$('#overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeModal(); });
+
+function memberOptions(sel){
+  return '<option value="">— Sahipsiz —</option>' + (App.data.members || []).map(m =>
+    '<option ' + (m === sel ? 'selected' : '') + '>' + esc(m) + '</option>').join('');
+}
+function segHtml(name, items, sel){
+  return '<div class="seg" data-seg="' + name + '">' + items.map(i =>
+    '<button type="button" class="' + (i.id === sel ? 'on' : '') + '" data-v="' + i.id + '" onclick="segPick(this)">' + i.n + '</button>').join('') + '</div>';
+}
+function segPick(btn){
+  [...btn.parentElement.children].forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function segVal(name){ return document.querySelector('[data-seg="' + name + '"] .on')?.dataset.v; }
+
+function taskForm(id, col){
+  const t = id ? App.data.tasks.find(x => x.id === id) : null;
+  openModal(
+    '<h3>' + (t ? 'Görevi Düzenle' : 'Yeni Görev') + '</h3>' +
+    '<label>Başlık</label><input id="f_title" value="' + esc(t?.title || '') + '" placeholder="örn: Fitil patlama efekti ekle">' +
+    '<label>Açıklama</label><textarea id="f_desc" placeholder="Detaylar, kabul kriterleri…">' + esc(t?.desc || '') + '</textarea>' +
+    '<div class="mrow"><div><label>Sahibi</label><select id="f_assignee">' + memberOptions(t?.assignee) + '</select></div>' +
+    '<div><label>Milestone</label><select id="f_ms"><option value="">— Yok —</option>' +
+    live('milestones').map(m => '<option value="' + m.id + '" ' + (t?.milestoneId === m.id ? 'selected' : '') + '>' + esc(m.title) + '</option>').join('') +
+    '</select></div></div>' +
+    '<label>Öncelik</label>' + segHtml('prio', PRIOS, t?.priority || 'med') +
+    '<label>Durum</label>' + segHtml('status', COLS.map(c => ({id:c.id, n:c.name})), t?.status || col || 'todo') +
+    '<label>Etiketler (virgülle ayır)</label><input id="f_tags" value="' + esc((t?.tags || []).join(', ')) + '" placeholder="örn: sanat, ses, level-design">' +
+    '<div class="mfoot">' +
+    (t ? '<button class="btn danger left" onclick="softDelete(\'tasks\',\'' + t.id + '\');closeModal()">Sil</button>' : '') +
+    '<button class="btn" onclick="closeModal()">Vazgeç</button>' +
+    '<button class="btn primary" onclick="saveTask(\'' + (t?.id || '') + '\')">Kaydet</button></div>'
+  );
+  $('#f_title').focus();
+}
+function saveTask(id){
+  const title = $('#f_title').value.trim();
+  if (!title){ toast('Başlık boş olamaz', 'err'); return; }
+  const old = id ? App.data.tasks.find(x => x.id === id) : null;
+  upsert('tasks', {
+    id: id || uid(),
+    title, desc: $('#f_desc').value.trim(),
+    assignee: $('#f_assignee').value,
+    milestoneId: $('#f_ms').value,
+    priority: segVal('prio'), status: segVal('status'),
+    tags: $('#f_tags').value.split(',').map(s => s.trim()).filter(Boolean),
+    createdAt: old?.createdAt || now(), createdBy: old?.createdBy || App.cfg.user
+  });
+  closeModal();
+}
+
+function msForm(id){
+  const m = id ? App.data.milestones.find(x => x.id === id) : null;
+  openModal(
+    '<h3>' + (m ? 'Milestone Düzenle' : 'Yeni Milestone') + '</h3>' +
+    '<label>Ad</label><input id="f_mtitle" value="' + esc(m?.title || '') + '" placeholder="örn: Alpha Sürümü">' +
+    '<label>Açıklama / hedefler</label><textarea id="f_mdesc">' + esc(m?.desc || '') + '</textarea>' +
+    '<label>Hedef Tarih</label><input type="date" id="f_mdue" value="' + esc(m?.due || '') + '">' +
+    '<div class="mfoot">' +
+    (m ? '<button class="btn danger left" onclick="softDelete(\'milestones\',\'' + m.id + '\');closeModal()">Sil</button>' : '') +
+    '<button class="btn" onclick="closeModal()">Vazgeç</button>' +
+    '<button class="btn primary" onclick="saveMs(\'' + (m?.id || '') + '\')">Kaydet</button></div>'
+  );
+  $('#f_mtitle').focus();
+}
+function saveMs(id){
+  const title = $('#f_mtitle').value.trim();
+  if (!title){ toast('Ad boş olamaz', 'err'); return; }
+  const old = id ? App.data.milestones.find(x => x.id === id) : null;
+  upsert('milestones', { id: id || uid(), title, desc: $('#f_mdesc').value.trim(), due: $('#f_mdue').value, createdAt: old?.createdAt || now() });
+  closeModal();
+}
+
+function bugForm(id){
+  const b = id ? App.data.bugs.find(x => x.id === id) : null;
+  openModal(
+    '<h3>' + (b ? 'Bug Düzenle' : 'Bug Bildir') + '</h3>' +
+    '<label>Başlık</label><input id="f_btitle" value="' + esc(b?.title || '') + '" placeholder="örn: 3. levelde fitil duvara takılıyor">' +
+    '<label>Tekrar adımları / detay</label><textarea id="f_bsteps" placeholder="1. Level 3&#39;ü aç&#10;2. …">' + esc(b?.steps || '') + '</textarea>' +
+    '<div class="mrow"><div><label>Çözen kişi</label><select id="f_bassignee">' + memberOptions(b?.assignee) + '</select></div>' +
+    '<div><label>Build / sürüm</label><input id="f_bbuild" value="' + esc(b?.build || '') + '" placeholder="örn: v0.3.1"></div></div>' +
+    '<label>Önem</label>' + segHtml('sev', SEVS, b?.severity || 'med') +
+    '<label>Durum</label>' + segHtml('bstat', BSTATS, b?.status || 'open') +
+    '<div class="mfoot">' +
+    (b ? '<button class="btn danger left" onclick="softDelete(\'bugs\',\'' + b.id + '\');closeModal()">Sil</button>' : '') +
+    '<button class="btn" onclick="closeModal()">Vazgeç</button>' +
+    '<button class="btn primary" onclick="saveBug(\'' + (b?.id || '') + '\')">Kaydet</button></div>'
+  );
+  $('#f_btitle').focus();
+}
+function saveBug(id){
+  const title = $('#f_btitle').value.trim();
+  if (!title){ toast('Başlık boş olamaz', 'err'); return; }
+  const old = id ? App.data.bugs.find(x => x.id === id) : null;
+  upsert('bugs', {
+    id: id || uid(), title,
+    steps: $('#f_bsteps').value.trim(), build: $('#f_bbuild').value.trim(),
+    assignee: $('#f_bassignee').value,
+    severity: segVal('sev'), status: segVal('bstat'),
+    createdAt: old?.createdAt || now(), createdBy: old?.createdBy || App.cfg.user
+  });
+  closeModal();
+}
+
+/* ---------------- ayarlar ---------------- */
+function settingsForm(){
+  const c = App.cfg;
+  openModal(
+    '<h3>⚙️ Ayarlar</h3><p class="sub">Bağlantı ve ekip ayarları</p>' +
+    '<label>Senin adın</label><input id="s_user" value="' + esc(c.user || '') + '">' +
+    '<label>Ekip üyeleri (virgülle ayır)</label><input id="s_members" value="' + esc((App.data.members || []).join(', ')) + '">' +
+    (c.mode === 'github' ?
+      '<label>GitHub kullanıcı/organizasyon</label><input id="s_owner" value="' + esc(c.owner || '') + '">' +
+      '<label>Repo adı</label><input id="s_repo" value="' + esc(c.repo || '') + '">' +
+      '<div class="mrow"><div><label>Branch</label><input id="s_branch" value="' + esc(c.branch || 'main') + '"></div>' +
+      '<div><label>Veri dosyası</label><input id="s_path" value="' + esc(c.path || 'data.json') + '"></div></div>' +
+      '<label>Token (fine-grained PAT)</label><input id="s_token" type="password" value="' + esc(c.token || '') + '">'
+      : '<div class="helpbox">Şu an <b>demo modundasın</b> — veriler yalnızca bu tarayıcıda saklanıyor. Arkadaşınla ortak kullanmak için GitHub bağlantısı kur.</div>') +
+    '<div class="mfoot">' +
+    '<button class="btn left" onclick="exportJson()">⬇ Yedek Al</button>' +
+    (c.mode === 'demo' ? '<button class="btn" onclick="closeModal();wizardGithub()">GitHub\'a Bağlan</button>' : '<button class="btn danger" onclick="resetApp()">Bağlantıyı Sıfırla</button>') +
+    '<button class="btn primary" onclick="saveSettings()">Kaydet</button></div>'
+  );
+}
+function saveSettings(){
+  const c = App.cfg;
+  c.user = $('#s_user').value.trim() || c.user;
+  const mem = $('#s_members').value.split(',').map(s => s.trim()).filter(Boolean);
+  if (mem.length){ App.data.members = mem; App.data.membersUpdatedAt = now(); }
+  if (c.mode === 'github'){
+    c.owner = $('#s_owner').value.trim();
+    c.repo = $('#s_repo').value.trim();
+    c.branch = $('#s_branch').value.trim() || 'main';
+    c.path = $('#s_path').value.trim() || 'data.json';
+    c.token = $('#s_token').value.trim();
+  }
+  LS.set('fr_cfg', c);
+  markDirty(); closeModal(); renderAll();
+  toast('Ayarlar kaydedildi', 'ok');
+}
+function resetApp(){
+  if (!confirm('GitHub bağlantısı ve yerel ayarlar silinecek (repodaki veriler durur). Emin misin?')) return;
+  LS.del('fr_cfg'); location.reload();
+}
+function exportJson(){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(App.data, null, 2)], {type: 'application/json'}));
+  a.download = 'fuse-rush-yedek-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+function switchUser(){
+  const members = App.data.members || [];
+  openModal('<h3>Sen kimsin?</h3><p class="sub">Görevler ve notlar bu isimle işaretlenir.</p>' +
+    '<div class="seg" style="margin-top:14px">' + members.map(m =>
+      '<button type="button" onclick="pickUser(\'' + esc(m) + '\')" style="padding:10px 16px">' + avatarHtml(m, 22) + ' ' + esc(m) + '</button>').join('') + '</div>' +
+    '<div class="mfoot"><button class="btn" onclick="closeModal()">Vazgeç</button></div>');
+}
+function pickUser(name){
+  App.cfg.user = name; LS.set('fr_cfg', App.cfg);
+  closeModal(); renderAll();
+}
+
+/* ---------------- kurulum sihirbazı ---------------- */
+function wizardStart(){
+  openModal(
+    '<div class="wizard"><h3>🧨 Fuse Rush Görev Merkezi&#39;ne hoş geldin!</h3>' +
+    '<p class="sub">Geliştirici arkadaşınla görevleri, bugları ve yol haritasını tek yerden, çakışma olmadan takip edin.</p>' +
+    '<button class="opt" onclick="wizardGithub()"><span class="ic">🔗</span><span><b>GitHub&#39;a bağlan (ortak kullanım)</b>' +
+    '<span>Veriler reponuzdaki data.json&#39;da tutulur. İkiniz de aynı panoyu görür, değişiklikler otomatik birleşir.</span></span></button>' +
+    '<button class="opt" onclick="startDemo()"><span class="ic">🎮</span><span><b>Önce demo modunda dene</b>' +
+    '<span>Kurulumsuz hemen başla. Veriler yalnızca bu tarayıcıda kalır; sonra ayarlardan GitHub&#39;a bağlanabilirsin.</span></span></button></div>'
+  );
+}
+function wizardGithub(){
+  const c = App.cfg || {};
+  openModal(
+    '<div class="wizard"><h3>🔗 GitHub Bağlantısı</h3>' +
+    '<div class="helpbox"><b>Token nasıl alınır?</b><ol>' +
+    '<li>GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> → Generate new token</li>' +
+    '<li>Repository access: <b>sadece bu repoyu</b> seç</li>' +
+    '<li>Permissions → Repository → <b>Contents: Read and write</b></li>' +
+    '<li>Oluşan <code>github_pat_…</code> kodunu aşağıya yapıştır</li></ol>' +
+    'İkinizin de kendi tokenı olmalı (aynı repoya yetkili).</div>' +
+    '<label>GitHub kullanıcı adı / organizasyon</label><input id="w_owner" value="' + esc(c.owner || '') + '" placeholder="örn: bloomgames">' +
+    '<label>Repo adı</label><input id="w_repo" value="' + esc(c.repo || '') + '" placeholder="örn: fuse-rush-tracker">' +
+    '<label>Token</label><input id="w_token" type="password" value="' + esc(c.token || '') + '" placeholder="github_pat_…">' +
+    '<label>Senin adın</label><input id="w_user" value="' + esc(c.user || '') + '" placeholder="örn: Bloom">' +
+    '<div class="mfoot"><button class="btn" onclick="wizardStart()">← Geri</button>' +
+    '<button class="btn primary" id="w_connect" onclick="wizardConnect()">Bağlan ve Başla</button></div></div>'
+  );
+}
+async function wizardConnect(){
+  const owner = $('#w_owner').value.trim(), repo = $('#w_repo').value.trim(),
+        token = $('#w_token').value.trim(), user = $('#w_user').value.trim();
+  if (!owner || !repo || !token || !user){ toast('Tüm alanları doldur', 'err'); return; }
+  $('#w_connect').textContent = 'Bağlanıyor…';
+  const demoData = App.cfg?.mode === 'demo' ? App.data : null;
+  App.cfg = { mode: 'github', owner, repo, branch: 'main', path: 'data.json', token, user };
+  try {
+    let remote = await ghGet();
+    if (remote.notFound){
+      // İlk kurulum: dosyayı oluştur (varsa demo verisini taşı)
+      const init = demoData || emptyData();
+      if (!init.members.includes(user)) init.members[0] = user;
+      const res = await ghPut(init, null);
+      App.data = init; App.sha = res.sha;
+    } else {
+      App.data = demoData ? mergeData(remote.json, demoData) : remote.json;
+      App.sha = remote.sha;
+      if (!App.data.members.includes(user)){ App.data.members.push(user); App.data.membersUpdatedAt = now(); }
+      if (demoData || !remote.json.members.includes(user)) await doSave();
+    }
+    LS.set('fr_cfg', App.cfg); LS.del('fr_demo');
+    closeModal(); startPolling(); renderAll();
+    setSync('ok', 'Senkronize ✓');
+    toast('GitHub bağlantısı kuruldu! 🚀', 'ok');
+  } catch (e){
+    App.cfg = demoData ? { mode: 'demo', user } : null;
+    App.data = demoData;
+    $('#w_connect') && ($('#w_connect').textContent = 'Bağlan ve Başla');
+    toast('Bağlanılamadı: repo adı ve token yetkilerini kontrol et', 'err');
+  }
+}
+function startDemo(){
+  const user = 'Bloom';
+  App.cfg = { mode: 'demo', user };
+  LS.set('fr_cfg', App.cfg);
+  App.data = LS.get('fr_demo') || demoSeed();
+  closeModal(); renderAll();
+  setSync('demo', 'Demo · yerel kayıt');
+}
+function demoSeed(){
+  const d = emptyData(); const t = now();
+  d.milestones = [
+    {id:'ms1', title:'Oynanabilir Prototip', desc:'Temel fitil mekaniği + 3 test levelı', due:'', createdAt:t, updatedAt:t},
+    {id:'ms2', title:'Alpha Sürümü', desc:'10 level, ses, temel UI', due:'', createdAt:t, updatedAt:t}
+  ];
+  d.tasks = [
+    {id:'t1', title:'Fitil yanma mekaniğini kodla', desc:'Fitil hızı ayarlanabilir olsun', status:'doing', assignee:'Developer', priority:'high', tags:['kod'], milestoneId:'ms1', createdAt:t, updatedAt:t},
+    {id:'t2', title:'Ana karakter sprite seti', desc:'', status:'todo', assignee:'Bloom', priority:'med', tags:['sanat'], milestoneId:'ms1', createdAt:t, updatedAt:t},
+    {id:'t3', title:'Level editörü araştır', desc:'Tiled vs kendi editörümüz?', status:'backlog', assignee:'', priority:'low', tags:['araştırma'], milestoneId:'', createdAt:t, updatedAt:t},
+    {id:'t4', title:'Proje reposunu kur', desc:'', status:'done', assignee:'Developer', priority:'med', tags:[], milestoneId:'ms1', createdAt:t, updatedAt:t}
+  ];
+  d.notes = [{id:'n1', text:'Hoş geldiniz! Bu demo verisi — silip kendi görevlerinizi ekleyebilirsiniz. GitHub bağlantısı kurunca buradaki veriler otomatik taşınır.', author:'Fuse Rush', createdAt:t, updatedAt:t}];
+  return d;
+}
+
+/* ---------------- başlangıç ---------------- */
+function startPolling(){
+  clearInterval(App.pollTimer);
+  App.pollTimer = setInterval(pollRemote, 25000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pollRemote(); });
+  window.addEventListener('online', () => { if (App.dirty) doSave(); });
+}
+async function init(){
+  renderTabs();
+  if (!App.cfg){ setSync('', 'Bağlı değil'); wizardStart(); return; }
+  if (App.cfg.mode === 'demo'){
+    App.data = LS.get('fr_demo') || demoSeed();
+    setSync('demo', 'Demo · yerel kayıt');
+    renderAll(); return;
+  }
+  setSync('busy', 'Yükleniyor…');
+  try {
+    const remote = await ghGet();
+    if (remote.notFound){
+      const res = await ghPut(emptyData(), null);
+      App.data = emptyData(); App.sha = res.sha;
+    } else { App.data = remote.json; App.sha = remote.sha; }
+    setSync('ok', 'Senkronize ✓');
+    startPolling(); renderAll();
+  } catch (e){
+    setSync('err', 'Bağlanılamadı');
+    App.data = emptyData(); renderAll();
+    toast('GitHub&#39;a ulaşılamadı — ayarları kontrol et', 'err');
+    setTimeout(() => settingsForm(), 400);
+  }
+}
+$('#gearBtn').addEventListener('click', settingsForm);
+$('#userChip').addEventListener('click', switchUser);
+init();
+
+</script>
+</body>
+</html>
