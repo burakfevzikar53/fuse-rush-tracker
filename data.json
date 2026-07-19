@@ -10,5 +10,13 @@
   "tasks": [],
   "milestones": [],
   "bugs": [],
-  "notes": []
+  "notes": [
+    {
+      "id": "mrs4dlluaspsu3",
+      "text": "Test-19.07.2026",
+      "author": "BFK",
+      "createdAt": 1784485139106,
+      "updatedAt": 1784485139106
+    }
+  ]
 }
