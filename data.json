@@ -7,7 +7,23 @@
     "BFK",
     "Developer"
   ],
-  "tasks": [],
+  "tasks": [
+    {
+      "id": "mrs4gvxyohuyl8",
+      "title": "1 karakteri AI oynasın",
+      "desc": "iki parmaktan yorulanlar için eklenebilecek bir opsiyon",
+      "assignee": "BFK",
+      "milestoneId": "",
+      "priority": "high",
+      "status": "backlog",
+      "tags": [
+        "oynanış"
+      ],
+      "createdAt": 1784485292470,
+      "createdBy": "BFK",
+      "updatedAt": 1784485292470
+    }
+  ],
   "milestones": [],
   "bugs": [],
   "notes": [
