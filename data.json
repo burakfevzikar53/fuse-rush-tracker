@@ -15,13 +15,13 @@
       "assignee": "BFK",
       "milestoneId": "",
       "priority": "high",
-      "status": "done",
+      "status": "backlog",
       "tags": [
         "oynanış"
       ],
       "createdAt": 1784485292470,
       "createdBy": "BFK",
-      "updatedAt": 1784485303359
+      "updatedAt": 1784485306974
     }
   ],
   "milestones": [],
